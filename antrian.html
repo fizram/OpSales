@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JramPrint - Sistem Antrian Digital Pro</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #0f172a; --accent: #2563eb; --sp-color: #dc2626;
+            --dg-color: #059669; --fj-color: #d97706; --bg: #f1f5f9; --white: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--primary); overflow-x: hidden; }
+
+        header { 
+            background: var(--white); box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            position: sticky; top: 0; z-index: 1000; width: 100%; 
+        }
+        .header-content { 
+            max-width: 1400px; margin: 0 auto; padding: 12px 20px; 
+            display: flex; justify-content: space-between; align-items: center; 
+        }
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo-img { height: 40px; width: auto; }
+        .header-title { font-weight: 800; font-size: 1.2rem; }
+        
+        nav { display: flex; gap: 8px; }
+        .nav-btn { 
+            padding: 10px 18px; border: none; background: #f1f5f9; cursor: pointer; 
+            font-weight: 600; border-radius: 10px; color: #475569; transition: 0.2s;
+        }
+        .nav-btn.active { background: var(--accent); color: white; }
+
+        .container { width: 100%; max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.3s ease; }
+
+        .fs-container { 
+            background: var(--white); border-radius: 24px; position: relative; 
+            padding: 40px 20px; min-height: 80vh; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; width: 100%; 
+        }
+        #fs-monitor { background: #0f172a; color: white; }
+
+        /* Modal Pilih Loket */
+        .loket-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; justify-content: center; 
+            align-items: center; z-index: 2000;
+        }
+        .loket-content {
+            background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 500px;
+            text-align: center;
+        }
+        .loket-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px;
+        }
+        .btn-loket {
+            padding: 15px; border: 1px solid #ddd; border-radius: 10px; cursor: pointer;
+            font-weight: bold; background: #f8fafc; transition: 0.2s;
+        }
+        .btn-loket:hover { background: var(--accent); color: white; }
+        
+        /* CSS UNTUK SEMBUNYIKAN TOMBOL SAAT FULLSCREEN */
+        :fullscreen .fs-toggle-btn {
+            display: none !important;
+        }
+        :-webkit-full-screen .fs-toggle-btn {
+            display: none !important;
+        }
+
+        .fs-toggle-btn { 
+            position: absolute; top: 20px; right: 20px; border: 1px solid #ddd; background: white; 
+            padding: 10px 15px; border-radius: 12px; cursor: pointer; font-weight: 700; color: #000;
+            z-index: 100;
+        }
+
+        .q-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; width: 100%; }
+        .btn-q { 
+            padding: 50px 20px; border: none; border-radius: 20px; color: white; 
+            font-size: 2.8rem; font-weight: 800; cursor: pointer; transition: 0.2s;
+        }
+        .btn-q span { display: block; font-size: 1.1rem; font-weight: 400; margin-top: 5px; opacity: 0.9; }
+
+        .mon-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; width: 100%; }
+        .mon-box { padding: 60px 20px; border-radius: 30px; color: white; text-align: center; }
+        .mon-num { font-size: 9rem; font-weight: 800; line-height: 1; margin: 25px 0; }
+        .mon-loket { background: rgba(0,0,0,0.2); padding: 10px 35px; border-radius: 50px; font-weight: 700; font-size: 1.5rem; }
+
+        .admin-card { background: white; border-radius: 20px; padding: 25px; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .table-wrapper { overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { text-align: left; padding: 15px; color: #64748b; font-size: 0.8rem; border-bottom: 2px solid #f1f5f9; text-transform: uppercase; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; }
+        
+        .receipt-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 10001;
+        }
+        .receipt-paper { background: white; width: 320px; padding: 30px; border-radius: 4px; text-align: center; color: black; font-family: monospace; }
+
+        .bg-sp { background: var(--sp-color); }
+        .bg-dg { background: var(--dg-color); }
+        .bg-fj { background: var(--fj-color); }
+        .timer-badge { background: #fee2e2; color: #dc2626; padding: 4px 8px; border-radius: 6px; font-weight: bold; }
+        .status-badge { padding: 5px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
+        .badge-waiting { background: #fef3c7; color: #92400e; }
+        .badge-called { background: #dcfce7; color: #166534; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <div class="logo-area">
+            <img src="logo.png" class="logo-img" onerror="this.style.display='none'">
+            <div class="header-title">JRAM PRINT</div>
+        </div>
+        <nav id="main-nav">
+            <button class="nav-btn active" onclick="switchTab('konsumen', this)">Konsumen</button>
+            <button class="nav-btn" onclick="switchTab('monitor', this)">Monitor</button>
+            <button class="nav-btn" onclick="switchTab('admin', this)">Admin</button>
+            <button class="nav-btn" onclick="switchTab('laporan', this)">Laporan</button>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+    <section id="tab-konsumen" class="section active">
+        <div id="fs-box-konsumen" class="fs-container">
+            <button class="fs-toggle-btn" onclick="toggleFullscreen('fs-box-konsumen')">⛶ FULLSCREEN</button>
+            <img src="logo.png" style="height:100px; margin-bottom:20px;" onerror="this.style.display='none'">
+            <h1 style="font-weight: 800; font-size: 2.5rem;">Selamat Datang di Jram Print</h1>
+            <p style="color: #64748b; margin-bottom:30px;">Silakan pilih layanan untuk mengambil nomor antrean</p>
+            <div class="q-grid">
+                <button class="btn-q bg-sp" onclick="takeQ('SP')">SP<span>SIAP PRINT</span></button>
+                <button class="btn-q bg-dg" onclick="takeQ('DG')">DG<span>DESIGN</span></button>
+                <button class="btn-q bg-fj" onclick="takeQ('FJ')">FJ<span>FOTOCOPY</span></button>
+            </div>
+            <div id="receipt-modal" class="receipt-overlay">
+                <div class="receipt-paper">
+                    <img src="logo.png" style="height:40px; margin-bottom:10px;" onerror="this.style.display='none'">
+                    <h2>JRAM PRINT</h2>
+                    <p>-------------------------</p>
+                    <p>NOMOR ANTREAN</p>
+                    <h1 id="receipt-no" style="font-size: 5rem; margin: 10px 0;">---</h1>
+                    <p id="receipt-service" style="font-weight: bold; font-size: 1.3rem;"></p>
+                    <p>-------------------------</p>
+                    <p id="receipt-date"></p>
+                    <button onclick="closeReceipt()" style="margin-top:20px; width:100%; padding:15px; background:black; color:white; border:none; border-radius:8px; cursor:pointer;">CETAK & TUTUP</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="tab-monitor" class="section">
+        <div id="fs-monitor" class="fs-container">
+            <button class="fs-toggle-btn" onclick="toggleFullscreen('fs-monitor')">⛶ FULLSCREEN MONITOR</button>
+            <div style="text-align:center; margin-bottom:40px;">
+                <img src="logo.png" style="height:60px;" onerror="this.style.display='none'">
+                <h1 style="font-size: 2.5rem; font-weight: 800; color: white;">MONITOR ANTREAN</h1>
+            </div>
+            <div class="mon-grid">
+                <div class="mon-box bg-sp"><div class="mon-loket">LOKET </div><div class="mon-num" id="mon-num-SP">---</div><p style="font-size:1.5rem">SIAP PRINT</p></div>
+                <div class="mon-box bg-dg"><div class="mon-loket">LOKET </div><div class="mon-num" id="mon-num-DG">---</div><p style="font-size:1.5rem">DESIGN</p></div>
+                <div class="mon-box bg-fj"><div class="mon-loket">LOKET </div><div class="mon-num" id="mon-num-FJ">---</div><p style="font-size:1.5rem">FOTOCOPY</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="tab-admin" class="section">
+        <div class="admin-card">
+            <h3 id="admin-sync-indicator">Memuat Antrean...</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>NO</th><th>LAYANAN</th><th>DAFTAR</th><th>TUNGGU</th><th>AKSI</th></tr></thead>
+                    <tbody id="admin-waiting-list"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="admin-card">
+            <h3>Terakhir Dipanggil</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>NO</th><th>LAYANAN</th><th>PANGGIL</th><th>DURASI</th><th>AKSI</th></tr></thead>
+                    <tbody id="admin-called-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="tab-laporan" class="section">
+        <div class="admin-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                <h3>Riwayat & Laporan Antrean</h3>
+                <button class="nav-btn" style="background:#059669; color:white" onclick="exportExcel()">Export Excel</button>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                <input type="date" id="filter-date" class="nav-btn" onchange="loadReport()">
+                <select id="filter-month" class="nav-btn" onchange="loadReport()">
+                    <option value="">-- Pilih Bulan --</option>
+                    <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+                    <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+                    <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+                    <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+                </select>
+                <button class="nav-btn" onclick="resetReport()">Hari Ini</button>
+            </div>
+            <div class="table-wrapper">
+                <table id="report-table-main">
+                    <thead><tr><th>Tgl / Jam</th><th>Layanan</th><th>Nomor</th><th>Tunggu</th><th>Status</th></tr></thead>
+                    <tbody id="report-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+    <div id="loket-modal" class="loket-modal">
+    <div class="loket-content">
+        <h3>Pilih Nomor Loket</h3>
+        <p>Nomor Antrean: <b id="selected-q-no">---</b></p>
+        <div class="loket-grid" id="loket-options">
+            </div>
+        <button onclick="closeLoketModal()" style="margin-top:20px; border:none; background:none; color:red; cursor:pointer;">Batal</button>
+    </div>
+</div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, update, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+    let pendingCallData = null; // Untuk menyimpan data antrean yang sedang mau dipanggil
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDdGddIndyc8aI7n7mXWVeV5LU9qQaxBeg",
+        authDomain: "jramprint.firebaseapp.com",
+        projectId: "jramprint",
+        storageBucket: "jramprint.firebasestorage.app",
+        messagingSenderId: "683020264418",
+        appId: "1:683020264418:web:3deab6703d5dea9b218fbb",
+        measurementId: "G-806G6BHXYB",
+        databaseURL: "https://jramprint-default-rtdb.asia-southeast1.firebasedatabase.app" 
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    
+    const getToday = () => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
+    const svc = { 
+        SP: { name: 'Siap Print', class: 'bg-sp' }, 
+        DG: { name: 'Design', class: 'bg-dg' }, 
+        FJ: { name: 'Fotocopy', class: 'bg-fj' } 
+    };
+
+    let speechQueue = [];
+    let isSpeaking = false;
+    let lastProcessed = { SP: '', DG: '', FJ: '' };
+
+    function terbilang(n) {
+        const b = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+        if (n < 12) return b[n];
+        if (n < 20) return terbilang(n - 10) + " Belas";
+        if (n < 100) return terbilang(Math.floor(n / 10)) + " Puluh " + (n % 10 !== 0 ? terbilang(n % 10) : "");
+        return n;
+    }
+
+    function speak(text, callback) {
+        speechQueue.push({ text, callback });
+        if (!isSpeaking) processQueue();
+    }
+
+    function processQueue() {
+        if (speechQueue.length === 0) { 
+            isSpeaking = false; 
+            return; 
+        }
+        isSpeaking = true;
+        const item = speechQueue.shift();
+        const msg = new SpeechSynthesisUtterance(item.text);
+        msg.lang = 'id-ID';
+
+        msg.onend = () => {
+            if (item.callback) item.callback(); // Update nomor di layar SETELAH suara selesai
+            setTimeout(processQueue, 500); // Jeda antar panggilan
+        };
+        window.speechSynthesis.speak(msg);
+    }
+
+    window.takeQ = async (type) => {
+        const today = getToday();
+        const countRef = ref(db, `counts/${today}/${type}`);
+        const result = await runTransaction(countRef, (current) => (current || 0) + 1);
+        
+        if (result.committed) {
+            const count = result.snapshot.val();
+            const code = `${type}-${String(count).padStart(3, '0')}`;
+            const now = Date.now();
+            await push(ref(db, `items/${today}`), { 
+                no: code, type: type, status: 'waiting', time: now, dateLabel: today 
+            });
+            document.getElementById('receipt-no').innerText = code;
+            document.getElementById('receipt-service').innerText = svc[type].name;
+            document.getElementById('receipt-date').innerText = new Date(now).toLocaleString('id-ID');
+            document.getElementById('receipt-modal').style.display = 'flex';
+            const speakType = type === 'DG' ? 'D. G.' : type;
+            speak(`Berhasil mengambil antrian. ${speakType}. Nomor urut ${count}`);
+        }
+    };
+
+    window.closeReceipt = () => document.getElementById('receipt-modal').style.display = 'none';
+
+    // Fungsi untuk memicu pemilihan loket
+    window.callAction = (key, no, type, isRecall = false) => {
+        pendingCallData = { key, no, type, isRecall };
+        document.getElementById('selected-q-no').innerText = no;
+        
+        // Generate tombol loket 1-11
+        const grid = document.getElementById('loket-options');
+        grid.innerHTML = '';
+        for (let i = 1; i <= 11; i++) {
+            grid.innerHTML += `<button class="btn-loket" onclick="confirmCall(${i})">${i}</button>`;
+        }
+        document.getElementById('loket-modal').style.display = 'flex';
+    };
+
+    // Fungsi eksekusi setelah loket dipilih
+    window.confirmCall = async (loketNum) => {
+        const { key, no, type, isRecall } = pendingCallData;
+        const today = getToday();
+
+        // 1. Update status di Firebase
+        if (!isRecall) {
+            await update(ref(db, `items/${today}/${key}`), { 
+                status: 'called', 
+                calledTime: Date.now(),
+                loket: loketNum 
+            });
+        }
+
+        // 2. Kirim data ke Monitor termasuk nomor loket
+        await set(ref(db, `monitor/${today}/${type}`), { 
+            no: no, 
+            t: Date.now(), 
+            loket: loketNum 
+        });
+
+        closeLoketModal();
+    };
+
+    window.closeLoketModal = () => {
+        document.getElementById('loket-modal').style.display = 'none';
+    };
+
+    function getDur(start, end) {
+        if (!start) return "-";
+        const diff = Math.floor(((end || Date.now()) - start) / 1000);
+        const m = Math.floor(diff / 60);
+        const s = diff % 60;
+        return `${m}m ${s}s`;
+    }
+
+    onValue(ref(db, `items`), (snapshot) => {
+        const allData = snapshot.val();
+        const today = getToday();
+        const wB = document.getElementById('admin-waiting-list');
+        const cB = document.getElementById('admin-called-list');
+        wB.innerHTML = ''; cB.innerHTML = ''; 
+        document.getElementById('admin-sync-indicator').innerText = "Antrean Hari Ini: " + today;
+        if (allData && allData[today]) {
+            Object.entries(allData[today]).forEach(([key, item]) => {
+                const row = `<tr>
+                    <td><b>${item.no}</b></td>
+                    <td>${svc[item.type].name}</td>
+                    <td>${new Date(item.time).toLocaleTimeString('id-ID')}</td>
+                    <td><span class="${item.status==='waiting'?'timer-badge':''}" data-start="${item.time}">${getDur(item.time, item.calledTime)}</span></td>
+                    <td><button class="nav-btn ${item.status==='waiting'?svc[item.type].class:''}" onclick="callAction('${key}', '${item.no}', '${item.type}', ${item.status==='called'})" style="${item.status==='called'?'background:#64748b; color:white':''}">
+                        ${item.status==='waiting'?'PANGGIL':'PANGGIL ULANG'}</button></td>
+                </tr>`;
+                if (item.status === 'waiting') wB.innerHTML += row;
+                else cB.insertAdjacentHTML('afterbegin', row);
+            });
+            if (!document.getElementById('filter-date').value && !document.getElementById('filter-month').value) renderReportTable(allData[today]);
+        }
+    });
+
+    onValue(ref(db, `monitor/${getToday()}`), (snapshot) => {
+        const data = snapshot.val() || {};
+        const isMon = document.getElementById('tab-monitor').classList.contains('active');
+        
+        if (!isMon) {
+            // Jika bukan di tab monitor (misal di tab Admin), update angka langsung tanpa suara
+            Object.keys(svc).forEach(t => {
+                const el = document.getElementById(`mon-num-${t}`);
+                if(el) el.innerText = (data[t] && data[t].no) ? data[t].no : '---';
+            });
+            return;
+        }
+
+        // LOGIKA KHUSUS MONITOR (Sesuai antrean suara)
+        Object.keys(svc).forEach(t => { 
+            const current = data[t] || { no: '---', t: 0, loket: '' };
+            if (current.no === '---') return;
+
+            const callID = current.no + "_" + current.t;
+            if (lastProcessed[t] !== callID) {
+                const num = parseInt(current.no.split('-')[1]);
+                const speakType = t === 'DG' ? 'D. G.' : t;
+                const teksPanggilan = `Nomor antrian. ${speakType}. ${terbilang(num)}. Silakan ke loket. ${current.loket}`;
+
+                // Tambahkan ke antrean suara dengan callback untuk update UI
+                speak(teksPanggilan, () => {
+                    // UPDATE TAMPILAN SETELAH SUARA SELESAI
+                    const el = document.getElementById(`mon-num-${t}`);
+                    if(el) {
+                        el.innerText = current.no;
+                        const loketLabel = el.previousElementSibling; 
+                        if(loketLabel) loketLabel.innerText = "LOKET " + current.loket;
+                    }
+                });
+
+                lastProcessed[t] = callID;
+            }
+        });
+    });
+
+    function renderReportTable(data) {
+        const rB = document.getElementById('report-body');
+        rB.innerHTML = '';
+        if (data) {
+            Object.values(data).reverse().forEach(item => {
+                rB.innerHTML += `<tr>
+                    <td><small>${item.dateLabel || ''}</small> ${new Date(item.time).toLocaleTimeString('id-ID')}</td>
+                    <td>${item.type}</td>
+                    <td><b>${item.no}</b></td>
+                    <td>${item.calledTime ? getDur(item.time, item.calledTime) : 'Menunggu'}</td>
+                    <td><span class="status-badge ${item.status==='waiting'?'badge-waiting':'badge-called'}">${item.status}</span></td>
+                </tr>`;
+            });
+        }
+    }
+
+    window.loadReport = async () => {
+        const dateVal = document.getElementById('filter-date').value;
+        const monthVal = document.getElementById('filter-month').value;
+        const snapshot = await get(ref(db, `items`));
+        const allData = snapshot.val();
+        let filtered = [];
+        if (allData) {
+            Object.keys(allData).forEach(dayKey => {
+                const dayItems = Object.values(allData[dayKey]);
+                if (dateVal && dayKey === dateVal) filtered.push(...dayItems);
+                else if (monthVal && dayKey.split('-')[1] === monthVal) filtered.push(...dayItems);
+            });
+        }
+        renderReportTable(filtered.sort((a,b) => b.time - a.time));
+    };
+
+    window.resetReport = () => {
+        document.getElementById('filter-date').value = '';
+        document.getElementById('filter-month').value = '';
+        get(ref(db, `items/${getToday()}`)).then(s => renderReportTable(s.val()));
+    };
+
+    window.switchTab = (id, btn) => {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + id).classList.add('active');
+        btn.classList.add('active');
+    };
+
+    window.toggleFullscreen = (id) => {
+        const el = document.getElementById(id);
+        if (!document.fullscreenElement) el.requestFullscreen();
+        else document.exitFullscreen();
+    };
+
+    window.exportExcel = () => {
+        const wb = XLSX.utils.table_to_book(document.getElementById("report-table-main"));
+        XLSX.writeFile(wb, `Laporan_Antrian_JramPrint.xlsx`);
+    };
+
+    setInterval(() => {
+        document.querySelectorAll('.timer-badge').forEach(el => {
+            el.innerText = getDur(parseInt(el.dataset.start));
+        });
+    }, 1000);
+</script>
+</body>
+</html>

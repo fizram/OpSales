@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operator Sales</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #FFFFFF; color: #1E293B; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .clean-card { background: #ffffff; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04); border-radius: 2rem; }
+        .nav-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.2s; }
+        .iframe-wrapper { width: 100%; border-radius: 2rem; overflow: hidden; border: 1px solid #F1F5F9; box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.05); background: white; }
+        iframe { width: 100%; height: 450px; border: none; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .gold { color: #FFD700; filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.4)); }
+        .silver { color: #94A3B8; }
+        .bronze { color: #B45309; }
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="loginView" class="view active">
+        <div class="flex flex-col items-center justify-center min-h-screen p-6 bg-[#FAFBFC]">
+            <div class="w-full max-w-sm p-12 clean-card text-center fade-in">
+                <div class="mb-10">
+                    <div class="w-12 h-1 bg-blue-700 mx-auto mb-6 rounded-full"></div>
+                    <h1 class="text-xl font-extrabold tracking-widest uppercase text-slate-900">Operator Sales</h1>
+                    <p class="text-[10px] text-slate-400 mt-2 font-bold tracking-[0.2em]">LOGIN SESUAI NAMA MASING-MASING</p>
+                </div>
+                <div class="space-y-6">
+                    <select id="userDropdown" class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-blue-700 text-sm font-semibold appearance-none cursor-pointer">
+                        <option value="">Memuat data...</option>
+                    </select>
+                    <button onclick="handleLogin()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-blue-800 transition-all active:scale-[0.98]">
+                        Login
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainDashboard" class="view">
+        <nav class="bg-white/80 backdrop-blur-md border-b border-slate-50 px-6 py-4 flex flex-wrap justify-between items-center sticky top-0 z-50">
+            <div class="flex items-center">
+                <img src="JW.png" alt="Logo" class="h-8 w-auto rounded-md">
+                <span id="userGreeting" class="ml-2 text-sm font-bold text-blue-600 border-l-2 border-slate-100 pl-3"></span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="antrian.html" class="nav-btn bg-red-600 text-yellow-300 hover:bg-red-700 shadow-lg shadow-red-100 font-bold border border-yellow-400">
+                    <i class="fa-solid fa-database text-yellow-300"></i>
+                    <span>BACKUP ANTRIAN</span>
+                </a>
+                <a href="https://portal.pandawa24jam.com/" target="_blank" class="nav-btn bg-blue-50 text-blue-700 hover:bg-blue-100"><i class="fa-solid fa-globe"></i> Portal</a>
+                <a href="https://forms.gle/EkM8Wfop86UnaVEV8" target="_blank" class="nav-btn bg-slate-50 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-ticket"></i> Laporan Ticketing</a>
+                <button onclick="showView('quizListView')" class="nav-btn bg-slate-900 text-white hover:bg-blue-700"><i class="fa-solid fa-graduation-cap"></i> Quiz</button>
+                <div class="h-6 w-px bg-slate-200 mx-2"></div>
+                <button onclick="logout()" class="text-[10px] font-bold text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </nav>
+
+        <div class="max-w-5xl mx-auto p-8 py-6 space-y-12">
+            
+            <div class="text-center py-4 fade-in">
+                <h1 class="text-2xl font-black uppercase tracking-[0.4em] text-slate-900">Operator Sales</h1>
+                <div class="w-10 h-1 bg-blue-700 mx-auto mt-3 rounded-full"></div>
+            </div>
+
+            <div id="chiefPanel" class="hidden fade-in">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="p-8 clean-card border-2 border-blue-50">
+                        <h3 class="font-bold mb-4 text-[10px] uppercase tracking-widest text-blue-700">Update Informasi</h3>
+                        <div class="space-y-3">
+                            <input id="annTitle" type="text" placeholder="Judul Pengumuman" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-100">
+                            <textarea id="annText" placeholder="Isi pesan..." class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm h-24 outline-none focus:ring-2 focus:ring-blue-100"></textarea>
+                            <button onclick="postAnnouncement()" class="w-full bg-blue-700 text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-blue-800">Publish</button>
+                        </div>
+                    </div>
+                    <div class="p-8 clean-card border-2 border-slate-100">
+                        <h3 class="font-bold mb-4 text-[10px] uppercase tracking-widest text-slate-900">Buat Quiz Baru</h3>
+                        <div class="space-y-3">
+                            <input id="newQuizTitle" type="text" placeholder="Judul Quiz (Materi)" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-slate-200">
+                            <textarea id="newQuizData" placeholder='Format JSON Soal...' class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-[10px] h-24 font-mono outline-none focus:ring-2 focus:ring-slate-200"></textarea>
+                            <button onclick="saveNewQuiz()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-blue-700">Simpan Quiz</button>
+                        </div>
+                    </div>
+                    <div class="p-8 clean-card border border-slate-100 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold mb-4 text-[10px] uppercase tracking-widest text-blue-700">Analisis Per Materi</h3>
+                            <div class="bg-blue-50/50 rounded-2xl p-6 text-center mb-4">
+                                <div class="w-10 h-10 bg-white shadow-sm text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fa-solid fa-chart-simple text-lg"></i>
+                                </div>
+                                <p class="text-[10px] text-slate-500 leading-relaxed">Pilih materi kuis tertentu untuk melihat rekap nilai seluruh operator secara detail.</p>
+                            </div>
+                        </div>
+                        <button onclick="openQuizSelector()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-blue-700 transition shadow-md shadow-blue-100">
+                            Lihat Rekap Nilai
+                        </button>
+                    </div>
+
+                    <div id="quizSelectorModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+                        <div class="bg-white w-full max-w-md rounded-[2rem] overflow-hidden shadow-2xl fade-in">
+                            <div class="p-8 border-b border-slate-50 flex justify-between items-center">
+                                <h3 class="font-bold text-sm uppercase tracking-widest">Pilih Materi Quiz</h3>
+                                <button onclick="closeSelectorModal()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
+                            </div>
+                            <div class="p-8 space-y-3" id="quizOptionList">
+                                </div>
+                        </div>
+                    </div>
+
+                    <div id="allResultsModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[110] flex items-center justify-center p-6">
+                        <div class="bg-white w-full max-w-4xl rounded-[2rem] overflow-hidden shadow-2xl fade-in">
+                            <div class="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                                <div>
+                                    <h3 class="font-bold text-sm uppercase tracking-widest" id="resModalTitle">Rekap Nilai</h3>
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase mt-1">Daftar Pengerjaan Seluruh Operator</p>
+                                </div>
+                                <button onclick="closeResultsModal()" class="text-slate-400 hover:text-red-500 font-bold">TUTUP</button>
+                            </div>
+                            <div class="p-0 max-h-[70vh] overflow-y-auto">
+                                <table class="w-full text-left">
+                                    <thead class="sticky top-0 bg-white shadow-sm">
+                                        <tr class="text-[9px] uppercase text-slate-400 font-black">
+                                            <th class="px-8 py-4">Nama Operator</th>
+                                            <th class="px-8 py-4 text-center">Skor</th>
+                                            <th class="px-8 py-4 text-center">Durasi</th>
+                                            <th class="px-8 py-4 text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="allResultsTableBody" class="divide-y divide-slate-50"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="detailModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-6">
+                            <div class="bg-white w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-2xl fade-in">
+                                <div class="p-8 border-b border-slate-50 flex justify-between items-center">
+                                    <h3 class="font-bold text-sm uppercase tracking-widest">Detail Pengerjaan</h3>
+                                    <button onclick="document.getElementById('detailModal').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
+                                </div>
+                                <div class="p-8 max-h-[60vh] overflow-y-auto" id="modalContent">
+                                    </div>
+                            </div>
+                        </div>
+                    <div class="p-8 clean-card border border-slate-100 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold mb-4 text-[10px] uppercase tracking-widest text-emerald-600">Laporan Nilai</h3>
+                        <div class="bg-emerald-50/50 rounded-2xl p-6 text-center mb-4">
+                            <div class="w-10 h-10 bg-white shadow-sm text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <i class="fa-solid fa-file-csv text-lg"></i>
+                            </div>
+                            <p class="text-[10px] text-slate-500 leading-relaxed">Ekspor seluruh hasil kuis operator ke dalam format CSV/Excel untuk rekapitulasi.</p>
+                        </div>
+                    </div>
+                    
+                    <button onclick="exportQuizResults()" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition shadow-md shadow-emerald-100">
+                        Download CSV
+                    </button>
+                </div>
+                </div>
+            </div>
+
+            <div id="annSection" class="space-y-6 fade-in">
+                <div class="flex items-center gap-4">
+                    <div class="h-px flex-1 bg-slate-100"></div>
+                    <h2 class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Papan Informasi</h2>
+                    <div class="h-px flex-1 bg-slate-100"></div>
+                </div>
+                <div id="announcementList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </div>
+
+            <section class="space-y-6 fade-in">
+                <div class="flex items-center gap-4">
+                    <div class="h-px flex-1 bg-slate-100"></div>
+                    <h2 class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Leaderboard Sales</h2>
+                    <div class="h-px flex-1 bg-slate-100"></div>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="https://leaderboard.pandawa24jam.com/"></iframe>
+                </div>
+            </section>
+
+            <section id="top3Section" class="space-y-6 fade-in">
+                <div class="flex items-center gap-4">
+                    <div class="h-px flex-1 bg-slate-100"></div>
+                    <h2 class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Top 3 Performance Quiz</h2>
+                    <div class="h-px flex-1 bg-slate-100"></div>
+                </div>
+                <div id="top3Container" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
+            </section>
+
+            <div id="chiefMonitoringArea" class="hidden space-y-6 fade-in mt-10 mb-10">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex-1 h-px bg-slate-100"></div>
+                    <h2 class="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">All Operators Monitoring (Murni)</h2>
+                    <div class="flex-1 h-px bg-slate-100"></div>
+                </div>
+                <div id="captureArea" class="bg-white rounded-[2rem] p-4"> 
+                    <div id="monitoringContent"></div>
+                </div>
+            </div>
+
+            <section class="space-y-6 fade-in">
+                <div class="flex items-center gap-4">
+                    <div class="h-px flex-1 bg-slate-100"></div>
+                    <h2 class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Riwayat Nilai Saya</h2>
+                    <div class="h-px flex-1 bg-slate-100"></div>
+                </div>
+                <div class="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50">
+                            <tr class="text-[10px] uppercase text-slate-400 font-black">
+                                <th class="px-8 py-4">Materi Quiz</th>
+                                <th class="px-8 py-4 text-center">Skor</th>
+                                <th class="px-8 py-4 text-center">Durasi</th>
+                                <th class="px-8 py-4 text-right">Waktu Selesai</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quizHistoryList" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div id="quizListView" class="view">
+        <div class="flex items-center justify-center min-h-screen bg-[#FAFBFC] p-6 text-center">
+            <div class="w-full max-w-2xl fade-in">
+                <h2 class="text-xl font-extrabold mb-8 uppercase tracking-widest text-slate-900">Pilih Materi Quiz</h2>
+                <div id="availableQuizzes" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <button onclick="showView('mainDashboard')" class="mt-10 text-[10px] font-black text-slate-400 uppercase hover:text-slate-900">Kembali</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="quizView" class="view">
+        <div class="flex items-center justify-center min-h-screen bg-white p-6">
+            <div class="w-full max-w-xl p-12 clean-card fade-in">
+                <div id="qArea">
+                    <div class="flex justify-between items-center mb-4">
+                        <span id="qProg" class="text-[10px] font-bold text-blue-700 uppercase tracking-widest"></span>
+                        <span class="text-[9px] font-black text-rose-500 animate-pulse uppercase tracking-tighter">
+                            ⚠️ REFRESH = NYERAH (GAK BISA ULANG)
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center mb-12"><span id="qProg" class="text-[10px] font-bold text-blue-700 uppercase tracking-widest"></span></div>
+                    <h2 id="qText" class="text-xl font-bold text-slate-800 mb-10 leading-relaxed"></h2>
+                    <div id="qOpts" class="grid gap-3 text-left"></div>
+                    <div class="mt-8 sticky bottom-4">
+                        <button id="qNext" onclick="nextQuestion()" class="hidden w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 transition-all active:scale-95">
+                            Lanjutkan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+        const SB_URL = 'https://ebuqdfohzqkgjlgzymeb.supabase.co'; 
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXFkZm9oenFrZ2psZ3p5bWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzQ0NTAsImV4cCI6MjA4NjMxMDQ1MH0.sq16G1cy34VUf7bO4AE-cPjCmHTA9A_aivEmAiwgZWs';
+        const _sb = supabase.createClient(SB_URL, SB_KEY);
+
+        // VARIABEL GLOBAL
+        let activeQuiz = null, currentIdx = 0, score = 0, selOpt = null;
+        let startTime = null; 
+        let editingQuizId = null; 
+        let currentQuestions = []; // <--- TAMBAHKAN INI UNTUK MENAMPUNG 15 SOAL ACAK
+        let quizDetails = []; 
+
+        function formatTime(totalSeconds) {
+            if (!totalSeconds || isNaN(totalSeconds)) return "0s";
+            const m = Math.floor(totalSeconds / 60);
+            const s = totalSeconds % 60;
+            return m > 0 ? `${m}m ${s}s` : `${s}s`;
+        }
+
+        // --- FITUR EXPORT NILAI (UNTUK CHIEF) ---
+        async function exportQuizResults() {
+            try {
+                const { data, error } = await _sb
+                    .from('quiz_results')
+                    .select('user_name, quiz_title, score, duration, created_at, details')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                if (!data || data.length === 0) return alert("Belum ada data kuis.");
+
+                let csvContent = "data:text/csv;charset=utf-8,";
+                // Header CSV diperbarui
+                csvContent += "Nama Operator,Materi Quiz,Skor,Durasi (Menit),Tanggal Selesai,Detail Jawaban (Soal | Jawaban User | Status)\n";
+
+                data.forEach(row => {
+                    const date = new Date(row.created_at).toLocaleString('id-ID');
+                    
+                    // Format detail jawaban menjadi string panjang dalam satu kolom
+                    let detailString = "";
+                    if (row.details && Array.isArray(row.details)) {
+                        detailString = row.details.map(d => 
+                            `[${d.pertanyaan} -> Jawab: ${d.jawaban_user} (${d.status})]`
+                        ).join(" ; ");
+                    }
+
+                    csvContent += `"${row.user_name}","${row.quiz_title}","${row.score}","${row.duration || 0}","${date}","${detailString}"\n`;
+                });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `Laporan_Lengkap_Quiz_${new Date().toLocaleDateString()}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (err) {
+                alert("Gagal mengekspor data.");
+            }
+        }
+
+        function showView(id) {
+            // Menghapus kelas active dari semua view agar berpindah halaman
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            
+            const targetView = document.getElementById(id);
+            if(targetView) targetView.classList.add('active');
+
+            // Tambahkan logika sapaan di sini
+            const uName = sessionStorage.getItem('uName');
+            const greetingElement = document.getElementById('userGreeting');
+
+            if (uName && greetingElement) {
+                greetingElement.innerText = `Hello, ${uName}`;
+            }
+
+            // Logika khusus saat masuk ke Dashboard Utama
+            if(id === 'mainDashboard') { 
+                loadAnnouncements(); 
+                loadMyQuizHistory(); 
+                loadTop3PerQuiz(); 
+                
+                // Cek akses Chief untuk memicu tabel monitoring otomatis
+                checkChiefAccess(); 
+            }
+            
+            if(id === 'quizListView') {
+                loadAvailableQuizzes();
+            }
+        }
+
+        async function loadUsers() {
+            const { data } = await _sb.from('users').select('*').order('username');
+            const drop = document.getElementById('userDropdown');
+            drop.innerHTML = '<option value="">-- Pilih Nama --</option>';
+            data?.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.username; opt.text = u.username;
+                drop.appendChild(opt);
+            });
+        }
+
+        // --- TOP 3: NILAI PERTAMA SAJA (MURNI) ---
+        async function loadTop3PerQuiz() {
+            // 1. Ambil SEMUA hasil kuis (kecuali Chief) urut dari yang paling lama dikerjakan
+            const { data: results } = await _sb.from('quiz_results')
+                .select('*')
+                .neq('user_name', 'Muhammad Fizram')
+                .order('created_at', { ascending: true }); // Ambil dari yang paling pertama dikerjakan
+                
+            const { data: quizzes } = await _sb.from('quizzes').select('title');
+            const container = document.getElementById('top3Container');
+            container.innerHTML = '';
+
+            quizzes?.forEach(quiz => {
+                // 2. Filter data berdasarkan judul kuis
+                const quizResults = results.filter(r => r.quiz_title === quiz.title);
+                
+                // 3. Logika "Hanya Nilai Pertama":
+                // Kita gunakan Map untuk menyimpan pengerjaan pertama saja bagi setiap user_name
+                const firstAttemptsMap = new Map();
+                quizResults.forEach(res => {
+                    if (!firstAttemptsMap.has(res.user_name)) {
+                        firstAttemptsMap.set(res.user_name, res);
+                    }
+                });
+
+                // 4. Ubah kembali Map ke Array, lalu urutkan berdasarkan Skor Tertinggi & Durasi Tercepat
+                const firstAttemptsOnly = Array.from(firstAttemptsMap.values())
+                    .sort((a, b) => {
+                        if (b.score !== a.score) return b.score - a.score; // Skor tertinggi dulu
+                        return a.duration - b.duration; // Jika skor sama, durasi tercepat
+                    })
+                    .slice(0, 3); // Ambil Top 3
+
+                if (firstAttemptsOnly.length > 0) {
+                    let cardHtml = `<div class="p-10 clean-card border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow">
+                        <h4 class="text-[11px] font-black uppercase text-blue-700 tracking-[0.2em] mb-8 border-b border-slate-50 pb-4">
+                            <i class="fa-solid fa-award mr-2"></i> ${quiz.title}
+                        </h4>
+                        <div class="space-y-6">`;
+                    
+                    firstAttemptsOnly.forEach((res, idx) => {
+                        const icons = ['fa-trophy gold', 'fa-medal silver', 'fa-award bronze'];
+                        const displayTime = formatTime(res.duration);
+                        
+                        cardHtml += `<div class="flex items-center justify-between group">
+                            <div class="flex items-center gap-4">
+                                <div class="w-8 text-center">
+                                    <i class="fa-solid ${icons[idx]} text-lg"></i>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="text-xs font-bold uppercase text-slate-700 tracking-tight">${res.user_name}</span>
+                                    <span class="text-[9px] text-slate-400 font-bold uppercase">
+                                        <i class="fa-regular fa-clock mr-1"></i>${displayTime}
+                                        <span class="ml-1 text-[8px] text-emerald-500 italic">(Nilai Murni)</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <span class="text-xs font-black text-blue-700 bg-blue-50 px-3 py-1.5 rounded-xl">${res.score} PTS</span>
+                        </div>`;
+                    });
+                    cardHtml += `</div></div>`;
+                    container.innerHTML += cardHtml;
+                }
+            });
+        }
+
+        // --- RIWAYAT NILAI SAYA ---
+        async function loadMyQuizHistory() {
+            const myName = sessionStorage.getItem('uName');
+            
+            // Pastikan nama ada sebelum memanggil database
+            if (!myName) return;
+
+            const { data, error } = await _sb
+                .from('quiz_results')
+                .select('*')
+                .eq('user_name', myName) // Mencocokkan nama user secara ketat
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error("Gagal memuat riwayat:", error);
+                return;
+            }
+
+            const box = document.getElementById('quizHistoryList');
+            
+            if (!data || data.length === 0) {
+                box.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-slate-300 italic">Belum ada riwayat untuk nama: ' + myName + '</td></tr>';
+                return;
+            }
+
+            box.innerHTML = data.map(s => {
+                const date = new Date(s.created_at).toLocaleString('id-ID', { 
+                    day: '2-digit', month: 'short', year: 'numeric', 
+                    hour: '2-digit', minute: '2-digit' 
+                });
+                const duration = s.duration ? formatTime(s.duration) : '-';
+                const scoreClass = s.score >= 80 ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700';
+                
+                return `<tr class="text-xs font-semibold">
+                    <td class="px-8 py-4">
+                        <div class="flex flex-col">
+                            <span class="text-slate-700 font-bold uppercase">${s.quiz_title}</span>
+                            <span class="text-[9px] text-blue-500 font-medium">Verified Result</span>
+                        </div>
+                    </td>
+                    <td class="px-8 py-4 text-center">
+                        <span class="${scoreClass} px-3 py-1 rounded-lg font-bold">${s.score}</span>
+                    </td>
+                    <td class="px-8 py-4 text-center text-slate-500">
+                        <i class="fa-regular fa-clock mr-1"></i> ${duration}
+                    </td>
+                    <td class="px-8 py-4 text-right text-slate-400 font-medium">${date}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function handleLogin() {
+            const sel = document.getElementById('userDropdown');
+            const selectedUser = sel.value;
+            
+            if(!selectedUser) return alert("Pilih nama Anda!");
+
+            // Proteksi Khusus Chief
+            if (selectedUser === "Muhammad Fizram") {
+                const pass = prompt("Masukkan Password Chief:");
+                
+                if (pass !== "11") { 
+                    alert("Password Salah! Akses ditolak.");
+                    return;
+                }
+            }
+
+            // Jika password benar atau user biasa, lanjutkan login
+            sessionStorage.setItem('uName', selectedUser);
+            showView('mainDashboard');
+        }
+
+        async function renderChiefMonitoring() {
+            const container = document.getElementById('monitoringContent');
+            if(!container) return;
+            
+            container.innerHTML = '<div class="p-10 text-center text-[10px] font-black text-blue-400 animate-pulse uppercase tracking-widest">Sinkronisasi Data...</div>';
+
+            try {
+                const [qRes, rRes, uRes] = await Promise.all([
+                    _sb.from('quizzes').select('title'),
+                    _sb.from('quiz_results').select('*').order('created_at', { ascending: true }),
+                    _sb.from('users').select('username') 
+                ]);
+
+                const quizzes = qRes.data || [];
+                const allResults = rRes.data || [];
+                const allUsers = uRes.data || [];
+
+                const masterUserList = allUsers
+                    .map(u => u.username)
+                    .filter(name => name && name !== "Muhammad Fizram");
+
+                const resultsByQuiz = {};
+                allResults.forEach(res => {
+                    if (res.user_name === "Muhammad Fizram") return; 
+                    const titleKey = res.quiz_title.trim();
+                    if (!resultsByQuiz[titleKey]) resultsByQuiz[titleKey] = new Map();
+                    if (!resultsByQuiz[titleKey].has(res.user_name)) {
+                        resultsByQuiz[titleKey].set(res.user_name, res);
+                    }
+                });
+
+                let html = '';
+
+                quizzes.forEach((quiz, qIdx) => {
+                    const currentTitle = quiz.title.trim();
+                    const murniMap = resultsByQuiz[currentTitle] || new Map();
+                    const sudahKerja = Array.from(murniMap.values()).sort((a, b) => b.score - a.score || a.duration - b.duration);
+                    const namaSudahKerja = Array.from(murniMap.keys());
+                    const belumKerja = masterUserList.filter(name => !namaSudahKerja.includes(name));
+
+                    const captureId = `capture-quiz-${qIdx}`;
+
+                    html += `
+                        <div id="${captureId}" class="mb-10 bg-white rounded-[2rem] border border-blue-50 overflow-hidden shadow-sm p-2">
+                            <div class="bg-blue-50/30 px-8 py-4 border-b border-blue-50 flex justify-between items-center rounded-t-[1.8rem]">
+                                <div>
+                                    <h4 class="text-[10px] font-black text-blue-700 uppercase tracking-widest">${quiz.title}</h4>
+                                    <p class="text-[8px] text-slate-400 font-bold mt-1 uppercase">Selesai: ${sudahKerja.length} | <span class="text-red-500 font-black">Belum: ${belumKerja.length}</span></p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="downloadFullDetailedPDF('${encodeURIComponent(currentTitle)}')" class="bg-red-50 text-red-600 text-[9px] font-black px-3 py-1.5 rounded-lg border border-red-100 transition flex items-center gap-2">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                    </button>
+                                    <button onclick="downloadPerQuizJPEG('${captureId}', '${quiz.title}')" class="bg-white text-blue-600 text-[9px] font-black px-3 py-1.5 rounded-lg border border-blue-100 hover:bg-blue-50 transition">
+                                        <i class="fa-solid fa-camera"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <table class="w-full text-left table-fixed">
+                                <tbody class="divide-y divide-slate-50">
+                                    ${sudahKerja.map((res, idx) => `
+                                        <tr class="text-[11px] font-bold">
+                                            <td class="px-4 py-4 text-center w-[10%]">${idx < 3 ? ['🏆','🥈','🥉'][idx] : '#' + (idx + 1)}</td>
+                                            <td class="px-2 py-4 text-slate-700 uppercase truncate w-[30%]">${res.user_name}</td>
+                                            
+                                            <td class="px-2 py-4 text-center w-[15%]">
+                                                <span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg border border-emerald-100 text-[10px] whitespace-nowrap">
+                                                    ${res.score} PTS
+                                                </span>
+                                            </td>
+                                            
+                                            <td class="px-2 py-4 text-center w-[15%] text-slate-400 text-[9px] whitespace-nowrap">
+                                                <i class="fa-regular fa-clock mr-1"></i>${formatTime(res.duration)}
+                                            </td>
+
+                                            <td class="px-2 py-4 text-center w-[20%] text-slate-400 text-[9px] whitespace-nowrap hidden sm:table-cell">
+                                                <i class="fa-regular fa-calendar mr-1"></i>${new Date(res.created_at).toLocaleDateString('id-ID', {day:'2-digit', month:'short'})}
+                                            </td>
+
+                                            <td class="px-4 py-4 text-right w-[10%]">
+                                                <button onclick="showDetailAnswer('${encodeURIComponent(JSON.stringify(res))}')" class="text-blue-500 text-[9px] font-black">DETAIL</button>
+                                            </td>
+                                        </tr>`).join('')}
+
+                                    ${belumKerja.map(name => `
+                                        <tr class="text-[11px] font-bold bg-red-50/30">
+                                            <td class="px-4 py-4 text-center w-[10%] text-red-200"><i class="fa-solid fa-circle-minus"></i></td>
+                                            <td class="px-2 py-4 text-red-500 uppercase opacity-70 w-[30%]">${name}</td>
+                                            <td colspan="4" class="px-4 py-4 text-right pr-8 text-red-400 text-[9px] uppercase italic tracking-tighter font-black">
+                                                BELUM MENGERJAKAN
+                                            </td>
+                                        </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>`;
+                });
+
+                container.innerHTML = html;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function downloadPerQuizJPEG(elementId, quizTitle) {
+            const element = document.getElementById(elementId);
+            
+            // Sembunyikan elemen yang tidak perlu masuk ke gambar
+            const btns = element.querySelectorAll('button');
+            btns.forEach(b => b.style.visibility = 'hidden');
+
+            html2canvas(element, {
+                backgroundColor: "#FFFFFF",
+                scale: 3, // Makin tinggi makin jernih
+                borderRadius: 32,
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Leaderboard-${quizTitle.replace(/\s+/g, '-')}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.9);
+                link.click();
+                
+                // Munculkan kembali tombolnya
+                btns.forEach(b => b.style.visibility = 'visible');
+            });
+        }
+
+        async function downloadFullDetailedPDF(materiTitle) {
+            const title = decodeURIComponent(materiTitle);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            try {
+                // 1. Ambil data hasil kuis (Hanya Nilai Murni / Percobaan Pertama)
+                const { data: results, error } = await _sb
+                    .from('quiz_results')
+                    .select('*')
+                    .eq('quiz_title', title)
+                    .neq('user_name', 'Muhammad Fizram')
+                    .order('created_at', { ascending: true }); // Ambil yang paling awal dikerjakan (murni)
+
+                if (error || !results.length) return alert("Data pengerjaan tidak ditemukan.");
+
+                // 2. Filter untuk mengambil hanya pengerjaan pertama per user
+                const murniMap = new Map();
+                results.forEach(res => {
+                    if (!murniMap.has(res.user_name)) {
+                        murniMap.set(res.user_name, res);
+                    }
+                });
+
+                // 3. Ubah ke Array dan URUT ABJAD A-Z
+                const finalData = Array.from(murniMap.values()).sort((a, b) => 
+                    a.user_name.localeCompare(b.user_name)
+                );
+
+                // 4. Mulai Menyusun PDF
+                finalData.forEach((res, index) => {
+                    if (index > 0) doc.addPage(); // Halaman baru untuk setiap orang agar detail
+
+                    // Header Background
+                    doc.setFillColor(30, 41, 59); // Navy
+                    doc.rect(0, 0, 210, 40, 'F');
+
+                    // Judul Laporan
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(14);
+                    doc.setFont(undefined, 'bold');
+                    doc.text("LAPORAN DETAIL HASIL PENGERJAAN MURNI", 14, 18);
+                    
+                    doc.setFontSize(9);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(`Sistem Monitoring Sales - Dicetak: ${new Date().toLocaleString('id-ID')}`, 14, 28);
+
+                    // Informasi Utama (Nama & Materi)
+                    doc.setTextColor(30, 41, 59);
+                    doc.setFontSize(11);
+                    doc.setFont(undefined, 'bold');
+                    doc.text("DATA OPERATOR", 14, 50);
+
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(`Nama Operator : ${res.user_name.toUpperCase()}`, 14, 60);
+                    doc.text(`Materi Kuis   : ${res.quiz_title}`, 14, 66);
+                    doc.text(`Total Skor    : ${res.score} POIN`, 14, 72);
+                    doc.text(`Durasi Kerja  : ${formatTime(res.duration)}`, 14, 78);
+                    doc.text(`Waktu Submit  : ${new Date(res.created_at).toLocaleString('id-ID')}`, 14, 84);
+
+                    // Tabel Detail Soal & Jawaban
+                    const tableRows = [];
+                    // Asumsi data.details berisi array {pertanyaan, jawaban_user, kunci_jawaban, status}
+                    const details = res.details || []; 
+
+                    details.forEach((d, i) => {
+                        tableRows.push([
+                            i + 1,
+                            d.pertanyaan,
+                            d.jawaban_user || '-',
+                            d.kunci_jawaban || '-',
+                            d.status
+                        ]);
+                    });
+
+                    doc.autoTable({
+                        head: [["NO", "PERTANYAAN", "JAWABAN USER", "KUNCI JAWABAN", "STATUS"]],
+                        body: tableRows,
+                        startY: 92,
+                        theme: 'grid',
+                        headStyles: { fillColor: [51, 65, 85], fontSize: 8, halign: 'center' },
+                        styles: { fontSize: 7, cellPadding: 2 },
+                        columnStyles: {
+                            0: { cellWidth: 8, halign: 'center' },
+                            1: { cellWidth: 70 },
+                            2: { cellWidth: 40 },
+                            3: { cellWidth: 40 },
+                            4: { halign: 'center', fontStyle: 'bold' }
+                        },
+                        didParseCell: function(data) {
+                            if (data.column.index === 4) {
+                                if (data.cell.raw === 'SALAH') data.cell.styles.textColor = [220, 38, 38]; // Merah
+                                if (data.cell.raw === 'BENAR') data.cell.styles.textColor = [5, 150, 105]; // Hijau
+                            }
+                        }
+                    });
+
+                    // Footer halaman
+                    doc.setFontSize(7);
+                    doc.setTextColor(150);
+                    doc.text(`Halaman ${index + 1} - Laporan pengerjaan murni operator ${res.user_name}`, 14, 285);
+                });
+
+                doc.save(`Laporan_Detail_Murni_${title}.pdf`);
+
+            } catch (err) {
+                console.error(err);
+                alert("Gagal memproses PDF Detail.");
+            }
+        }
+
+        async function loadAvailableQuizzes() {
+            const { data } = await _sb.from('quizzes').select('*').order('created_at', { ascending: false });
+            const isChief = sessionStorage.getItem('uName') === 'Muhammad Fizram';
+            const container = document.getElementById('availableQuizzes');
+            
+            container.innerHTML = data?.map(q => {
+                // Mengonversi objek ke string JSON yang aman untuk diletakkan di dalam atribut onclick
+                const safeQuiz = JSON.stringify(q).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                
+                return `
+                <div class="p-8 clean-card border border-slate-50 hover:border-blue-700 transition text-left relative group">
+                    <div onclick='prepareQuiz(${JSON.stringify(q)})' class="cursor-pointer">
+                        <p class="text-[10px] font-black text-blue-700 uppercase mb-2">Quiz Aktif</p>
+                        <h4 class="font-extrabold text-slate-900">${q.title}</h4>
+                    </div>
+
+                    ${isChief ? `
+                        <button onclick="loadQuizToEditor('${safeQuiz}')" 
+                            class="absolute top-6 right-6 text-blue-500 hover:text-blue-800 text-[10px] font-black uppercase flex items-center gap-1 bg-blue-50 px-3 py-2 rounded-xl transition-all active:scale-95">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                    ` : ''}
+                </div>
+                `;
+            }).join('') || '<p class="text-slate-400 italic">Belum ada kuis tersedia.</p>';
+        }
+
+        function loadQuizToEditor(quizRaw) {
+            try {
+                // Membersihkan string dari format HTML entity kembali ke JSON murni
+                const cleanJson = quizRaw.replace(/&quot;/g, '"');
+                const quiz = JSON.parse(cleanJson);
+                
+                editingQuizId = quiz.id; 
+                
+                // Mengisi input form Chief Panel
+                document.getElementById('newQuizTitle').value = quiz.title;
+                document.getElementById('newQuizData').value = JSON.stringify(quiz.questions, null, 2);
+                
+                // Berpindah ke tampilan dashboard dan scroll ke Chief Panel
+                showView('mainDashboard');
+                setTimeout(() => {
+                    document.getElementById('chiefPanel').scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+                
+                // Mengubah teks dan warna tombol Simpan menjadi Update
+                const saveBtn = document.querySelector("button[onclick='saveNewQuiz()']");
+                saveBtn.innerText = "Update Materi Quiz";
+                saveBtn.classList.remove('bg-slate-900');
+                saveBtn.classList.add('bg-blue-600');
+                
+            } catch (e) {
+                console.error("Gagal load ke editor:", e);
+                alert("Gagal memuat data edit: " + e.message);
+            }
+        }
+
+        async function prepareQuiz(d) { 
+            const uName = sessionStorage.getItem('uName');
+            
+            // 1. Cek apakah user sudah pernah mengerjakan (Kecuali Chief)
+            if (uName !== "Muhammad Fizram") {
+                const { data: existingRecord } = await _sb
+                    .from('quiz_results')
+                    .select('id')
+                    .eq('user_name', uName)
+                    .eq('quiz_title', d.title);
+
+                if (existingRecord && existingRecord.length > 0) {
+                    alert("Maaf, Anda sudah mengerjakan kuis ini sebelumnya. Tidak diizinkan mengerjakan ulang!");
+                    showView('mainDashboard');
+                    return;
+                }
+            }
+
+            // 2. Pasang Pesan "Nackal" saat user mencoba Refresh
+            window.onbeforeunload = function() {
+                    return "Hayo tidak boleh ya Refresh hehehe, Mau curang ya? Nackal Nih...";
+            };
+
+            // 3. Inisialisasi Kuis
+            activeQuiz = d; 
+            currentIdx = 0; 
+            score = 0; 
+            quizDetails = [];
+            startTime = new Date(); 
+
+            // Acak soal
+            currentQuestions = [...d.questions].sort(() => 0.5 - Math.random());
+
+            showView('quizView'); 
+            renderQuestion(); 
+        }
+
+        function renderQuestion() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            selOpt = null;
+            const q = currentQuestions[currentIdx];
+            
+            document.getElementById('qProg').innerText = `SOAL ${currentIdx + 1} / ${currentQuestions.length}`;
+            document.getElementById('qText').innerText = q.q;
+            document.getElementById('qOpts').innerHTML = q.a.map((o, i) => `
+                <button onclick="pickOpt(${i})" id="opt-${i}" class="w-full text-left p-5 bg-slate-50 border border-slate-100 rounded-2xl text-slate-600 font-semibold hover:border-blue-700 transition-all outline-none">${o}</button>
+            `).join('');
+            document.getElementById('qNext').classList.add('hidden');
+        }
+
+        function pickOpt(i) {
+            if (selOpt !== null) return;
+            selOpt = i;
+
+            const q = currentQuestions[currentIdx];
+            const correctIdx = q.c; // Sesuaikan dengan key JSON anda (c atau correct)
+            const allButtons = document.querySelectorAll('#qOpts button');
+            
+            allButtons.forEach(btn => btn.classList.remove('hover:border-blue-700'));
+
+            if (i === correctIdx) {
+                const btn = document.getElementById(`opt-${i}`);
+                btn.classList.replace('bg-slate-50', 'bg-emerald-500');
+                btn.classList.replace('text-slate-600', 'text-white');
+            } else {
+                const btnSalah = document.getElementById(`opt-${i}`);
+                btnSalah.classList.replace('bg-slate-50', 'bg-rose-500');
+                btnSalah.classList.replace('text-slate-600', 'text-white');
+
+                const btnBenar = document.getElementById(`opt-${correctIdx}`);
+                if (btnBenar) {
+                    btnBenar.classList.add('border-emerald-500', 'border-2', 'text-emerald-700');
+                    btnBenar.innerHTML += ` <span class="text-[10px] font-black">(BENAR)</span>`;
+                }
+            }
+
+            const nextBtn = document.getElementById('qNext');
+            nextBtn.classList.remove('hidden');
+            nextBtn.innerText = currentIdx < currentQuestions.length - 1 ? "Soal Berikutnya" : "Lihat Hasil Akhir";
+        }
+        
+
+        async function nextQuestion() {
+            if (selOpt === null) return alert("Pilih jawaban dulu!");
+
+            const q = currentQuestions[currentIdx];
+            
+            const poinPerSoal = 100 / currentQuestions.length;
+            if (selOpt === q.c) { 
+                score += poinPerSoal;
+            }
+
+            quizDetails.push({
+                pertanyaan: q.q,
+                jawaban_user: q.a[selOpt],
+                kunci_jawaban: q.a[q.c],
+                status: selOpt === q.c ? "BENAR" : "SALAH"
+            });
+            
+            if (currentIdx < currentQuestions.length - 1) { 
+                currentIdx++; 
+                selOpt = null;
+                renderQuestion(); 
+                document.getElementById('qNext').classList.add('hidden');
+            } else {
+                // --- TARUH DI SINI ---
+                window.onbeforeunload = null; // Mematikan peringatan refresh karena kuis sudah tamat
+                // ---------------------
+
+                const endTime = new Date();
+                const durationSeconds = Math.round((endTime - startTime) / 1000); 
+
+                let skorAkhir = Math.round(score);
+                if (skorAkhir > 100) skorAkhir = 100;
+
+                const { error } = await _sb.from('quiz_results').insert([{ 
+                    user_name: sessionStorage.getItem('uName'), 
+                    score: skorAkhir, 
+                    quiz_title: activeQuiz.title,
+                    duration: durationSeconds,
+                    details: quizDetails
+                }]);
+                
+                if (error) {
+                    alert("Gagal simpan: " + error.message);
+                } else {
+                    alert("Selesai! Skor Kamu: " + skorAkhir);
+                    quizDetails = []; 
+                    score = 0;
+                    currentIdx = 0;
+                    await loadMyQuizHistory(); 
+                    await loadTop3PerQuiz();
+                    showView('mainDashboard');
+                }
+            }
+        }
+
+        // --- FUNGSI LIHAT SEMUA NILAI (CHIEF) ---
+        async function loadAllResults() {
+            const { data, error } = await _sb
+                .from('quiz_results')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) return alert("Gagal memuat data");
+            
+            const box = document.getElementById('allResultsList');
+            box.innerHTML = data?.map(s => {
+                // Menyiapkan data JSON untuk dikirim ke fungsi detail
+                const safeData = JSON.stringify(s).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                
+                return `<tr class="text-xs font-semibold">
+                    <td class="px-6 py-4 text-slate-900 uppercase font-black">${s.user_name}</td>
+                    <td class="px-6 py-4 text-slate-500 uppercase">${s.quiz_title}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-bold">${s.score}</span>
+                    </td>
+                    <td class="px-6 py-4 text-center text-slate-400">${s.duration || 0}m</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="showDetailAnswer('${safeData}')" class="bg-slate-900 text-white text-[9px] px-3 py-1.5 rounded-lg uppercase font-bold hover:bg-blue-700 transition">
+                            Lihat Soal
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="5" class="p-8 text-center text-slate-300 italic">Tidak ada data.</td></tr>';
+        }
+
+        function showDetailAnswer(encodedData) {
+            try {
+                const data = JSON.parse(decodeURIComponent(encodedData));
+                const content = document.getElementById('modalContent');
+                const modal = document.getElementById('detailModal');
+                
+                if (!content || !modal) return;
+
+                // Header Laporan yang akan masuk di Capture JPEG
+                let headerHtml = `
+                    <div id="capture-area" class="bg-white">
+                        <div class="mb-6 p-2 border-b-2 border-slate-100 pb-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">Hasil Pengerjaan</h3>
+                                    <h2 class="text-xl font-black text-slate-800 uppercase leading-tight">${data.user_name}</h2>
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">${data.quiz_title}</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-black text-emerald-500">${data.score}</div>
+                                    <div class="text-[8px] text-slate-400 font-black uppercase">Total Skor</div>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex gap-3 text-[9px] font-bold text-slate-400 uppercase">
+                                <span><i class="fa-regular fa-clock mr-1"></i> ${formatTime(data.duration)}</span>
+                                <span><i class="fa-solid fa-calendar-day mr-1"></i> ${new Date(data.created_at).toLocaleDateString('id-ID')}</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            ${(!data.details || data.details.length === 0) 
+                                ? '<div class="p-8 text-center italic text-slate-400">Data detail tidak tersedia.</div>'
+                                : data.details.map((d, i) => `
+                                    <div class="p-5 rounded-[1.5rem] border ${d.status === 'BENAR' ? 'border-emerald-100 bg-emerald-50/30' : 'border-rose-100 bg-rose-50/30'}">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <span class="text-[9px] font-black uppercase ${d.status === 'BENAR' ? 'text-emerald-600' : 'text-rose-600'} tracking-widest">${d.status}</span>
+                                            <span class="text-[9px] text-slate-400 font-bold uppercase">SOAL ${i + 1}</span>
+                                        </div>
+                                        <p class="text-[11px] font-bold text-slate-800 mb-3">${d.pertanyaan}</p>
+                                        <div class="grid grid-cols-2 gap-4 text-[10px]">
+                                            <div>
+                                                <p class="text-slate-400 uppercase font-black text-[8px] mb-1">Jawaban User:</p>
+                                                <p class="font-bold ${d.status === 'BENAR' ? 'text-emerald-700' : 'text-rose-700'}">${d.jawaban_user || '-'}</p>
+                                            </div>
+                                            ${d.status === 'SALAH' ? `
+                                            <div>
+                                                <p class="text-slate-400 uppercase font-black text-[8px] mb-1">Kunci Jawaban:</p>
+                                                <p class="font-bold text-emerald-700">${d.kunci_jawaban || '-'}</p>
+                                            </div>` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mt-8 grid grid-cols-3 gap-3">
+                        <button onclick="downloadDetailJPEG('${data.user_name}', '${data.quiz_title}')" class="bg-slate-900 text-white text-[10px] font-black py-4 rounded-2xl hover:bg-slate-800 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-camera"></i> UNDUH JPEG
+                        </button>
+                        <button onclick="downloadDetailCSV('${encodedData}')" class="bg-emerald-600 text-white text-[10px] font-black py-4 rounded-2xl hover:bg-emerald-500 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-file-csv"></i> UNDUH CSV
+                        </button>
+                        <button onclick="downloadDetailPDF('${encodeURIComponent(JSON.stringify(data))}')" class="bg-red-600 text-white text-[10px] font-black py-4 rounded-2xl hover:bg-red-700 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-file-pdf"></i> UNDUH PDF
+                        </button>
+                    </div>
+                `;
+
+                content.innerHTML = headerHtml;
+                modal.classList.remove('hidden');
+            } catch (e) {
+                console.error("Error modal detail:", e);
+                alert("Gagal menampilkan detail.");
+            }
+        }
+
+        // Fungsi Download Gambar (Menggunakan html2canvas)
+            async function downloadDetailJPEG(name, quiz) {
+                const area = document.getElementById('capture-area');
+                const btn = event.currentTarget;
+                const originalText = btn.innerHTML;
+                
+                btn.innerText = "MENGOLAH...";
+                
+                try {
+                    const canvas = await html2canvas(area, { 
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: "#FFFFFF"
+                    });
+                    const link = document.createElement('a');
+                    link.download = `Hasil_${name}_${quiz}.jpg`;
+                    link.href = canvas.toDataURL('image/jpeg', 0.9);
+                    link.click();
+                } catch (e) {
+                    alert("Gagal mengunduh gambar.");
+                } finally {
+                    btn.innerHTML = originalText;
+                }
+            }
+
+        // Fungsi Download CSV (Excel)
+        function downloadDetailCSV(encodedData) {
+            const data = JSON.parse(decodeURIComponent(encodedData));
+            let csv = "data:text/csv;charset=utf-8,";
+            
+            // Header Info
+            csv += `LAPORAN PENGERJAAN KUIS\n`;
+            csv += `Nama Operator,${data.user_name}\n`;
+            csv += `Materi,${data.quiz_title}\n`;
+            csv += `Skor Akhir,${data.score}\n`;
+            csv += `Durasi,${formatTime(data.duration)}\n`;
+            csv += `Tanggal,${new Date(data.created_at).toLocaleString()}\n\n`;
+            
+            // Header Tabel
+            csv += "No,Pertanyaan,Jawaban User,Kunci Jawaban,Status\n";
+
+            // Isi Data
+            data.details.forEach((d, i) => {
+                const q = d.pertanyaan.replace(/,/g, '');
+                const j = (d.jawaban_user || '-').replace(/,/g, '');
+                const k = (d.kunci_jawaban || '-').replace(/,/g, '');
+                csv += `${i+1},${q},${j},${k},${d.status}\n`;
+            });
+
+            const encodedUri = encodeURI(csv);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Data_${data.user_name}_${data.quiz_title}.csv`);
+            document.body.appendChild(link);
+            link.click();
+        }
+
+        async function downloadDetailPDF(encodedData) {
+            const data = JSON.parse(decodeURIComponent(encodedData));
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // 1. Header Laporan
+            doc.setFontSize(18);
+            doc.text("LAPORAN HASIL PENGERJAAN KUIS", 14, 22);
+            
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(`Nama Operator : ${data.user_name}`, 14, 32);
+            doc.text(`Materi Quiz   : ${data.quiz_title}`, 14, 38);
+            doc.text(`Skor Akhir    : ${data.score} PTS`, 14, 44);
+            doc.text(`Durasi        : ${formatTime(data.duration)}`, 14, 50);
+            doc.text(`Tanggal       : ${new Date(data.created_at).toLocaleString('id-ID')}`, 14, 56);
+
+            // 2. Tabel Detail Jawaban
+            const tableColumn = ["No", "Pertanyaan", "Jawaban User", "Kunci Jawaban", "Status"];
+            const tableRows = [];
+
+            data.details.forEach((d, i) => {
+                const rowData = [
+                    i + 1,
+                    d.pertanyaan,
+                    d.jawaban_user || '-',
+                    d.kunci_jawaban || '-',
+                    d.status
+                ];
+                tableRows.push(rowData);
+            });
+
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 65,
+                theme: 'striped',
+                headStyles: { fillColor: [30, 41, 59], fontSize: 9 }, // Warna Navy
+                columnStyles: {
+                    0: { cellWidth: 10 },
+                    1: { cellWidth: 70 },
+                    4: { fontStyle: 'bold' }
+                },
+                styles: { fontSize: 8, cellPadding: 3 },
+                didParseCell: function(data) {
+                    // Memberi warna merah jika salah
+                    if (data.column.index === 4 && data.cell.raw === 'SALAH') {
+                        data.cell.styles.textColor = [220, 38, 38];
+                    }
+                    if (data.column.index === 4 && data.cell.raw === 'BENAR') {
+                        data.cell.styles.textColor = [5, 150, 105];
+                    }
+                }
+            });
+
+            // 3. Footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.text(`Dicetak otomatis melalui Sistem Monitoring Sales - Halaman ${i}`, 14, doc.internal.pageSize.height - 10);
+            }
+
+            doc.save(`Laporan_${data.user_name}_${data.quiz_title}.pdf`);
+        }
+
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        // Pastikan fungsi dipanggil saat Chief masuk dashboard
+        function checkChiefAccess() {
+            const uName = sessionStorage.getItem('uName');
+            const cp = document.getElementById('chiefPanel'); // Tombol panel admin
+            const monitoringArea = document.getElementById('chiefMonitoringArea'); // Wadah tabel murni
+            
+            if (uName === "Muhammad Fizram") {
+                // Tampilkan elemen khusus Chief
+                if(cp) cp.classList.remove('hidden'); 
+                if(monitoringArea) {
+                    monitoringArea.classList.remove('hidden');
+                    renderChiefMonitoring(); // Jalankan pengisian data tabel
+                }
+                loadAllResults(); // Memuat data untuk rekap CSV
+            } else {
+                // Sembunyikan jika bukan Chief
+                if(cp) cp.classList.add('hidden');
+                if(monitoringArea) monitoringArea.classList.add('hidden');
+            }
+        }
+
+        // 1. Membuka Modal Pilihan Quiz
+        async function openQuizSelector() {
+            const { data: quizzes } = await _sb.from('quizzes').select('title');
+            const container = document.getElementById('quizOptionList');
+            
+            container.innerHTML = quizzes?.map(q => `
+                <button onclick="loadResultsByQuiz('${q.title.replace(/'/g, "\\'")}')" 
+                    class="w-full p-4 text-left border border-slate-100 rounded-2xl hover:border-blue-700 hover:bg-blue-50/50 transition flex justify-between items-center group">
+                    <span class="text-xs font-bold text-slate-700 uppercase">${q.title}</span>
+                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300 group-hover:text-blue-700"></i>
+                </button>
+            `).join('') || '<p class="text-center italic text-slate-400">Belum ada materi kuis.</p>';
+            
+            document.getElementById('quizSelectorModal').classList.remove('hidden');
+        }
+
+        // 2. Memuat Hasil Berdasarkan Quiz yang Dipilih
+        async function loadResultsByQuiz(title) {
+            const { data, error } = await _sb
+                .from('quiz_results')
+                .select('*')
+                .eq('quiz_title', title)
+                .order('score', { ascending: false })
+                .order('duration', { ascending: true });
+
+            if (error) return alert("Gagal mengambil data");
+
+            document.getElementById('resModalTitle').innerText = `REKAP: ${title}`;
+            const tbody = document.getElementById('allResultsTableBody');
+            
+            tbody.innerHTML = data?.map(s => {
+                // Mengubah data pengerjaan menjadi string aman
+                const detailData = encodeURIComponent(JSON.stringify(s));
+                return `
+                    <tr class="text-xs font-semibold hover:bg-slate-50/50 transition">
+                        <td class="px-8 py-5 uppercase font-black text-slate-800">${s.user_name}</td>
+                        <td class="px-8 py-5 text-center">
+                            <span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-bold">${s.score}</span>
+                        </td>
+                        <td class="px-8 py-5 text-center text-slate-400 font-medium">${formatTime(s.duration)}</td>
+                        <td class="px-8 py-5 text-right">
+                            <button onclick="showDetailAnswer('${detailData}')" class="text-[9px] font-black text-blue-700 uppercase border-b border-blue-200 hover:border-blue-700">
+                                Lihat Jawaban
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="4" class="p-12 text-center text-slate-300 italic">Belum ada data.</td></tr>';
+
+            document.getElementById('allResultsModal').classList.remove('hidden');
+        }
+
+        // 3. Fungsi Penutup Modal
+        function closeSelectorModal() { document.getElementById('quizSelectorModal').classList.add('hidden'); }
+        function closeResultsModal() { document.getElementById('allResultsModal').classList.add('hidden'); }
+
+        async function loadAnnouncements() {
+            const { data } = await _sb.from('announcements').select('*').order('created_at', { ascending: false });
+            document.getElementById('announcementList').innerHTML = data?.map(a => `<div class="bg-white p-6 rounded-[2rem] border border-slate-50 shadow-sm"><h4 class="font-bold text-slate-900 text-sm mb-1"><i class="fa-solid fa-circle-info text-blue-600 mr-2"></i>${a.title}</h4><p class="text-slate-400 text-xs">${a.content}</p></div>`).join('') || '';
+        }
+
+        async function postAnnouncement() {
+            const t = document.getElementById('annTitle').value, c = document.getElementById('annText').value;
+            if(!t || !c) return alert("Lengkapi!");
+            await _sb.from('announcements').insert([{ title: t, content: c }]);
+            location.reload();
+        }
+
+        async function saveNewQuiz() {
+            const t = document.getElementById('newQuizTitle').value;
+            const d = document.getElementById('newQuizData').value;
+            if(!t || !d) return alert("Lengkapi judul dan data soal!");
+
+            try {
+                const questions = JSON.parse(d);
+                if (editingQuizId) {
+                    // Proses Update
+                    await _sb.from('quizzes').update({ title: t, questions: questions }).eq('id', editingQuizId);
+                    alert("Materi Quiz berhasil diperbarui!");
+                    editingQuizId = null;
+                } else {
+                    // Proses Simpan Baru
+                    await _sb.from('quizzes').insert([{ title: t, questions: questions }]);
+                    alert("Quiz Baru berhasil disimpan!");
+                }
+                location.reload();
+            } catch (e) {
+                alert("JSON Error! Pastikan format soal benar.");
+            }
+        }
+
+
+        function logout() { 
+            sessionStorage.clear(); // Menghapus semua data session termasuk uName
+            window.location.reload(); 
+        }
+        document.addEventListener('DOMContentLoaded', loadUsers);
+    </script>
+</body>
+</html>
